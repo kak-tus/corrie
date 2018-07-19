@@ -1,1 +1,3 @@
-# corrie
+# Corrie
+
+Reliable (with RabbitMQ) Clickhouse writer.
