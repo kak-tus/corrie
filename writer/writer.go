@@ -3,7 +3,9 @@ package writer
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
+	"git.aqq.me/go/nanachi"
 	"git.aqq.me/go/app/appconf"
 	"git.aqq.me/go/app/applog"
 	"git.aqq.me/go/app/event"
@@ -102,4 +104,24 @@ func (w Writer) Start() {
 }
 
 func (w Writer) toFailedPool() {
+}
+
+// SetChannel set channel
+func (w *Writer) SetChannel(c <-chan *nanachi.Delivery) {
+	w.c = c
+}
+
+// IsAccessible checks Clickhouse status
+func (w Writer) IsAccessible() bool {
+	for i := 0; i < 10; i++ {
+		err := w.db.Ping()
+		if err == nil {
+			return true
+		}
+
+		w.logger.Error(err)
+		time.Sleep(time.Second)
+	}
+
+	return false
 }

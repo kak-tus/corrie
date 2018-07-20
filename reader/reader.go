@@ -91,9 +91,11 @@ func (r *Reader) Start() {
 		return
 	}
 
-	for msg := range msgs {
-		fmt.Println("Consumed message:", string(msg.Body))
-	}
+	r.C = msgs
+
+	// for msg := range msgs {
+	// 	fmt.Println("Consumed message:", string(msg.Body))
+	// }
 
 	return
 }
@@ -116,4 +118,10 @@ func (r Reader) declare(ch *amqp.Channel) error {
 	}
 
 	return nil
+}
+
+// IsAccessible checks RabbitMQ status
+func (r Reader) IsAccessible() bool {
+	// TODO ping
+	return true
 }
