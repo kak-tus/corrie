@@ -37,10 +37,8 @@ func main() {
 		})
 
 		rdr = reader.GetReader()
-		go rdr.Start()
 
 		wrt = writer.GetWriter()
-		wrt.SetChannel(rdr.C)
 		go wrt.Start()
 
 		healthcheck.Add("/status", status)

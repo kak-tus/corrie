@@ -25,5 +25,3 @@ type rabbitConfig struct {
 	QueueFailed string
 	MaxShard    int
 }
-
-type errorNotifier struct{}

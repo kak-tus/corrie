@@ -26,28 +26,12 @@ func init() {
 				return err
 			}
 
-			logger := applog.GetLogger()
-
-			nn, err := nanachi.NewClient(
-				nanachi.ClientConfig{
-					URI:           cnf.Rabbit.URI,
-					Heartbeat:     time.Second * 15,
-					ErrorNotifier: new(Reader),
-
-					RetrierConfig: &retrier.Config{
-						RetryPolicy: []time.Duration{time.Second},
-					},
-				},
-			)
-			if err != nil {
-				return err
-			}
-
 			rdr = &Reader{
-				logger:  logger,
-				config:  cnf,
-				nanachi: nn,
+				logger: applog.GetLogger(),
+				config: cnf,
 			}
+
+			rdr.logger.Info("Started reader")
 
 			return nil
 		},
@@ -55,8 +39,10 @@ func init() {
 
 	event.Stop.AddHandler(
 		func() error {
-			rdr.consumer.Close()
+			rdr.logger.Info("Stop reader")
+
 			rdr.nanachi.Close()
+
 			return nil
 		},
 	)
@@ -69,41 +55,49 @@ func GetReader() *Reader {
 
 // Start reader
 func (r *Reader) Start() {
+	nn, err := nanachi.NewClient(
+		nanachi.ClientConfig{
+			URI:           r.config.Rabbit.URI,
+			Heartbeat:     time.Second * 15,
+			ErrorNotifier: r,
+			RetrierConfig: &retrier.Config{
+				RetryPolicy: []time.Duration{time.Second},
+			},
+		},
+	)
+	if err != nil {
+		r.logger.Panic(err)
+	}
+
+	r.nanachi = nn
+
 	src := &nanachi.Source{
 		Queue:    r.config.Rabbit.Queue,
 		MaxShard: int32(r.config.Rabbit.MaxShard),
 		Declare:  rdr.declare,
 	}
 
-	cns := r.nanachi.NewConsumer(
+	cons := r.nanachi.NewConsumer(
 		nanachi.ConsumerConfig{
 			Source:        src,
 			PrefetchCount: r.config.Batch,
 		},
 	)
 
-	r.consumer = cns
+	r.consumer = cons
 
 	msgs, err := r.consumer.Consume()
 
 	if err != nil {
-		r.logger.Error(err)
-		return
+		r.logger.Panic(err)
 	}
 
 	r.C = msgs
-
-	// for msg := range msgs {
-	// 	fmt.Println("Consumed message:", string(msg.Body))
-	// }
-
-	return
 }
 
 // Notify nanachi method
 func (r Reader) Notify(err error) {
-	// r.logger.Error(err)
-	println(err.Error())
+	r.logger.Error(err)
 }
 
 func (r Reader) declare(ch *amqp.Channel) error {
@@ -111,7 +105,11 @@ func (r Reader) declare(ch *amqp.Channel) error {
 		shardName := fmt.Sprintf("%s.%d", r.config.Rabbit.Queue, i)
 
 		_, err := ch.QueueDeclare(shardName, true, false, false, false, nil)
+		if err != nil {
+			return err
+		}
 
+		_, err = ch.QueueDeclare(r.config.Rabbit.QueueFailed, true, false, false, false, nil)
 		if err != nil {
 			return err
 		}
@@ -124,4 +122,9 @@ func (r Reader) declare(ch *amqp.Channel) error {
 func (r Reader) IsAccessible() bool {
 	// TODO ping
 	return true
+}
+
+// Stop reader
+func (r Reader) Stop() {
+	r.consumer.Cancel()
 }
