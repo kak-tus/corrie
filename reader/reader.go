@@ -55,7 +55,7 @@ func GetReader() *Reader {
 
 // Start reader
 func (r *Reader) Start() {
-	nn, err := nanachi.NewClient(
+	client, err := nanachi.NewClient(
 		nanachi.ClientConfig{
 			URI:           r.config.Rabbit.URI,
 			Heartbeat:     time.Second * 15,
@@ -69,7 +69,7 @@ func (r *Reader) Start() {
 		r.logger.Panic(err)
 	}
 
-	r.nanachi = nn
+	r.nanachi = client
 
 	src := &nanachi.Source{
 		Queue:    r.config.Rabbit.Queue,
@@ -93,6 +93,22 @@ func (r *Reader) Start() {
 	}
 
 	r.C = msgs
+
+	dst := &nanachi.Destination{
+		RoutingKey: r.config.Rabbit.QueueFailed,
+		Declare:    rdr.declare,
+	}
+
+	producer := client.NewSmartProducer(
+		nanachi.SmartProducerConfig{
+			Destinations:      []*nanachi.Destination{dst},
+			Confirm:           true,
+			Mandatory:         true,
+			PendingBufferSize: 1000,
+		},
+	)
+
+	r.producer = producer
 }
 
 // Notify nanachi method
@@ -127,4 +143,22 @@ func (r Reader) IsAccessible() bool {
 // Stop reader
 func (r Reader) Stop() {
 	r.consumer.Cancel()
+}
+
+// ToFailedQueue move message to failed queue
+func (r Reader) ToFailedQueue(m *nanachi.Delivery) {
+	err := r.producer.Send(
+		nanachi.Publishing{
+			RoutingKey: r.config.Rabbit.QueueFailed,
+			Publishing: amqp.Publishing{
+				ContentType:  "text/plain",
+				Body:         m.Body,
+				DeliveryMode: amqp.Persistent,
+			},
+		},
+	)
+
+	if err != nil {
+		r.logger.Error(err)
+	}
 }

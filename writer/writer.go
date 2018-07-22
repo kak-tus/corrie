@@ -9,7 +9,6 @@ import (
 	"git.aqq.me/go/app/appconf"
 	"git.aqq.me/go/app/applog"
 	"git.aqq.me/go/app/event"
-	"git.aqq.me/go/nanachi"
 	"git.aqq.me/go/retrier"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/kak-tus/corrie/message"
@@ -104,12 +103,13 @@ LOOP:
 			err := w.decoder.Unmarshal(msg.Body, &parsed)
 			if err != nil {
 				w.logger.Error("Decode failed: ", err)
-				w.toFailedPool(msg)
+				w.reader.ToFailedQueue(msg)
 				break
 			}
 
 			if w.toSendVals[parsed.Query] == nil {
 				w.toSendVals[parsed.Query] = make([]toSend, w.config.Batch)
+				w.toSendCnts[parsed.Query] = 0
 			}
 
 			w.toSendVals[parsed.Query][w.toSendCnts[parsed.Query]] = toSend{
@@ -129,9 +129,6 @@ LOOP:
 	}
 
 	w.m.Unlock()
-}
-
-func (w Writer) toFailedPool(m *nanachi.Delivery) {
 }
 
 // IsAccessible checks Clickhouse status
@@ -168,7 +165,6 @@ func (w *Writer) sendOne(query string) {
 		}
 
 		w.toSendCnts[query] = 0
-		w.toSendVals[query] = w.toSendVals[query][:0]
 	}
 }
 
@@ -195,7 +191,7 @@ func (w *Writer) send(query string, vals []toSend) {
 
 			if err != nil {
 				w.logger.Error(err)
-				w.toFailedPool(val.nanachi)
+				w.reader.ToFailedQueue(val.nanachi)
 				succeded--
 				continue
 			}

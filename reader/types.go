@@ -11,6 +11,7 @@ type Reader struct {
 	config   readerConfig
 	nanachi  *nanachi.Client
 	consumer *nanachi.Consumer
+	producer *nanachi.SmartProducer
 	C        <-chan *nanachi.Delivery
 }
 
