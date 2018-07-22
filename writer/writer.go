@@ -157,10 +157,10 @@ func (w *Writer) sendAll() {
 
 func (w *Writer) sendOne(query string) {
 	if w.toSendCnts[query] > 0 {
-		w.send(query, w.toSendVals[query])
+		w.send(query, w.toSendVals[query][0:w.toSendCnts[query]])
 		w.logger.Infof("Sended %d values for %q", w.toSendCnts[query], query)
 
-		for _, v := range w.toSendVals[query] {
+		for _, v := range w.toSendVals[query][0:w.toSendCnts[query]] {
 			err := v.nanachi.Ack(false)
 			if err != nil {
 				w.logger.Error(err)
@@ -187,14 +187,23 @@ func (w *Writer) send(query string, vals []toSend) {
 			return retrier.NeedRetry
 		}
 
+		// There is no need to commit if no one succeeded exec
+		succeded := len(vals)
+
 		for _, val := range vals {
-			_, err := stmt.Exec(val.parsed.Data)
+			_, err := stmt.Exec(val.parsed.Data...)
 
 			if err != nil {
 				w.logger.Error(err)
 				w.toFailedPool(val.nanachi)
+				succeded--
 				continue
 			}
+		}
+
+		if succeded <= 0 {
+			tx.Rollback()
+			return retrier.Succeed
 		}
 
 		err = tx.Commit()
