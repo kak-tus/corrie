@@ -54,11 +54,13 @@ func status() (healthcheck.State, string) {
 	var rs bool
 	go func() {
 		rs = rdr.IsAccessible()
+		wg.Done()
 	}()
 
 	var ws bool
 	go func() {
 		ws = wrt.IsAccessible()
+		wg.Done()
 	}()
 
 	wg.Wait()
