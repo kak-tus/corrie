@@ -2,7 +2,9 @@ package writer
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -187,7 +189,8 @@ func (w *Writer) send(query string, vals []toSend) {
 		succeded := len(vals)
 
 		for _, val := range vals {
-			_, err := stmt.Exec(val.parsed.Data...)
+			data := w.makeCHArray(val.parsed.Data)
+			_, err := stmt.Exec(data...)
 
 			if err != nil {
 				w.logger.Error(err)
@@ -210,4 +213,34 @@ func (w *Writer) send(query string, vals []toSend) {
 
 		return retrier.Succeed
 	})
+}
+
+func (w Writer) makeCHArray(vals []interface{}) []interface{} {
+	data := make([]interface{}, len(vals))
+
+	for i, v := range vals {
+		num, ok := v.(json.Number)
+
+		if ok && strings.Index(num.String(), ".") >= 0 {
+			conv, err := num.Float64()
+			if err != nil {
+				w.logger.Error(err)
+				continue
+			}
+
+			data[i] = conv
+		} else if ok {
+			conv, err := num.Int64()
+			if err != nil {
+				w.logger.Error(err)
+				continue
+			}
+
+			data[i] = conv
+		} else {
+			data[i] = v
+		}
+	}
+
+	return data
 }
