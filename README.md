@@ -18,3 +18,11 @@ CORRIE_CLICKHOUSE_ALTADDRS=clickhouse2.example.com:9000
 ```
 docker run --rm -it kaktuss/corrie
 ```
+
+## Write data
+
+To write data use [message](https://godoc.org/github.com/kak-tus/corrie/message) package.
+
+You can write data with nanachi RabbitMQ client (see example) or with any other client.
+
+Pay attention, that Corrie uses sharded queue (with nanachi) hardcoded to use 3 shards. Shards count will be configurable later.
