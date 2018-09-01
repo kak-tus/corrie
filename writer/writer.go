@@ -202,6 +202,7 @@ func (w *Writer) send(query string, vals []toSend) {
 			_, err := stmt.Exec(data...)
 
 			if err != nil {
+				w.logger.Error("Exec failed: ", err)
 				v.failed = true
 				continue
 			}
