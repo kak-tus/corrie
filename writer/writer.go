@@ -182,7 +182,12 @@ func (w *Writer) send(query string, vals []toSend) {
 		if err != nil {
 			tx.Rollback()
 			w.logger.Error("Prepare query failed: ", err)
-			return retrier.NeedRetry
+
+			for _, val := range vals {
+				w.reader.ToFailedQueue(val.nanachi)
+			}
+
+			return retrier.Succeed
 		}
 
 		// There is no need to commit if no one succeeded exec

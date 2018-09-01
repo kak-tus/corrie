@@ -1,3 +1,6 @@
+2018-09-01 v0.4.0
+  - Mark as failed on prepare stage.
+
 2018-09-01 v0.3.0
   - Change version numbering.
   - Renew vendoring.
