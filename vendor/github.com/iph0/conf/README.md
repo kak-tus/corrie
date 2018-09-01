@@ -10,6 +10,7 @@ and _include directives in resulting configuration tree. Package conf comes with
 built-in configuration loaders: fileconf and envconf, and can be extended by
 third-party configuration loaders. Package conf do not watch for configuration
 changes, but you can implement this feature in the custom configuration loader.
+You can find full example in repository.
 
 See full documentation on [GoDoc](https://godoc.org/github.com/iph0/conf) for
 more information.

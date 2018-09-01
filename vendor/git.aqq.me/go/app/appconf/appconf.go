@@ -56,3 +56,10 @@ func GetConfig() map[string]interface{} {
 
 	return config
 }
+
+// Decode method decodes raw configuration data into structure. Note that the
+// conf tags defined in the struct type can indicate which fields the values are
+// mapped to.
+func Decode(configRaw, config interface{}) error {
+	return conf.Decode(configRaw, config)
+}

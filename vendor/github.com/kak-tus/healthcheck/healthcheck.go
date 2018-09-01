@@ -51,10 +51,8 @@ func init() {
 				return err
 			}
 
-			logger := applog.GetLogger()
-
 			srv = &server{
-				logger: logger,
+				logger: applog.GetLogger().Sugar(),
 				listener: &http.Server{
 					Addr: config.Listen,
 				},
@@ -63,7 +61,7 @@ func init() {
 			go func() {
 				err = srv.listener.ListenAndServe()
 				if err != nil && err != http.ErrServerClosed {
-					logger.Error(err)
+					srv.logger.Error(err)
 				}
 			}()
 

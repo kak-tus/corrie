@@ -15,7 +15,7 @@ import (
 var lchr *launcher
 
 type launcher struct {
-	logger *zap.SugaredLogger
+	logger *zap.Logger
 	reload chan struct{}
 	stop   chan struct{}
 }
@@ -51,7 +51,7 @@ func (l *launcher) run(appStart func() error) {
 	err = appStart()
 
 	if err != nil {
-		l.logger.Error("Start failed: ", err)
+		l.logger.Error("Start failed: " + err.Error())
 		return
 	}
 
@@ -66,7 +66,7 @@ LOOP:
 			err := app.Reload()
 
 			if err != nil {
-				l.logger.Error("Reload failed: ", err)
+				l.logger.Error("Reload failed: " + err.Error())
 				continue LOOP
 			}
 
@@ -77,7 +77,7 @@ LOOP:
 	err = app.Stop()
 
 	if err != nil {
-		l.logger.Error("Stopped with error: ", err)
+		l.logger.Error("Stopped with error: " + err.Error())
 		return
 	}
 }
@@ -95,7 +95,7 @@ func (l *launcher) listenSignals() {
 
 	go func() {
 		for sig := range signals {
-			l.logger.Info("Got signal: ", sig)
+			l.logger.Info("Got signal: " + sig.String())
 
 			if sig == syscall.SIGHUP {
 				l.reload <- struct{}{}

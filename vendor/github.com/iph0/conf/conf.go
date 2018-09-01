@@ -7,11 +7,14 @@ import (
 	"strings"
 
 	"github.com/iph0/merger"
+	mapstruct "github.com/mitchellh/mapstructure"
 )
 
 const (
-	errPref    = "conf"
-	varNameSep = "."
+	genericName    = "conf"
+	errPref        = genericName
+	decoderTagName = genericName
+	varNameSep     = "."
 )
 
 var (
@@ -60,6 +63,44 @@ func NewProcessor(config ProcessorConfig) *Processor {
 	}
 }
 
+// Decode method decodes raw configuration data into structure. Note that the
+// conf tags defined in the struct type can indicate which fields the values are
+// mapped to (see the example below). The decoder will make the following conversions:
+//  - bools to string (true = "1", false = "0")
+//  - numbers to string (base 10)
+//  - bools to int/uint (true = 1, false = 0)
+//  - strings to int/uint (base implied by prefix)
+//  - int to bool (true if value != 0)
+//  - string to bool (accepts: 1, t, T, TRUE, true, True, 0, f, F, FALSE, false,
+//    False. Anything else is an error)
+//  - empty array = empty map and vice versa
+//  - negative numbers to overflowed uint values (base 10)
+//  - slice of maps to a merged map
+//  - single values are converted to slices if required. Each element also can
+//    be converted. For example: "4" can become []int{4} if the target type is
+//    an int slice.
+func Decode(configRaw, config interface{}) error {
+	decoder, err := mapstruct.NewDecoder(
+		&mapstruct.DecoderConfig{
+			WeaklyTypedInput: true,
+			Result:           &config,
+			TagName:          decoderTagName,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = decoder.Decode(configRaw)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Load method loads configuration tree using configuration locators.
 // Configuration locator can be a string or a map of type map[string]interface{}.
 // Map type can be used to specify default configuration layers. The merge
@@ -88,13 +129,13 @@ func (p *Processor) Load(locators ...interface{}) (map[string]interface{}, error
 		return nil, err
 	}
 
-	switch config := iConfig.(type) {
-	case map[string]interface{}:
-		return config, nil
-	default:
+	config, ok := iConfig.(map[string]interface{})
+	if !ok {
 		return nil, fmt.Errorf("%s: loaded configuration has invalid type %T",
 			errPref, config)
 	}
+
+	return config, nil
 }
 
 func (p *Processor) load(locators []interface{}) (interface{}, error) {
@@ -172,11 +213,11 @@ func (p *Processor) process(config interface{}) (interface{}, error) {
 }
 
 func (p *Processor) walk(node reflect.Value) error {
-	node = revealValue(node)
-	nodeKind := node.Kind()
+	node = reveal(node)
+	kind := node.Kind()
 
-	if nodeKind == reflect.Map ||
-		nodeKind == reflect.Slice {
+	if kind == reflect.Map ||
+		kind == reflect.Slice {
 
 		if _, ok := p.seen[node]; ok {
 			return nil
@@ -185,7 +226,7 @@ func (p *Processor) walk(node reflect.Value) error {
 		p.seen[node] = true
 		var err error
 
-		if nodeKind == reflect.Map {
+		if kind == reflect.Map {
 			err = p.walkMap(node)
 		} else {
 			err = p.walkSlice(node)
@@ -204,15 +245,15 @@ func (p *Processor) walkMap(m reflect.Value) error {
 		iKey := key.Interface()
 		p.pushCrumb(iKey.(string))
 
-		value := m.MapIndex(key)
-		value, err := p.processNode(value)
+		node := m.MapIndex(key)
+		node, err := p.processNode(node)
 
 		if err != nil {
 			return err
 		}
 
-		m.SetMapIndex(key, value)
-		err = p.walk(value)
+		m.SetMapIndex(key, node)
+		err = p.walk(node)
 
 		if err != nil {
 			return err
@@ -231,15 +272,15 @@ func (p *Processor) walkSlice(s reflect.Value) error {
 		indexStr := strconv.Itoa(i)
 		p.pushCrumb(indexStr)
 
-		value := s.Index(i)
-		value, err := p.processNode(value)
+		node := s.Index(i)
+		node, err := p.processNode(node)
 
 		if err != nil {
 			return err
 		}
 
-		s.Index(i).Set(value)
-		err = p.walk(value)
+		s.Index(i).Set(node)
+		err = p.walk(node)
 
 		if err != nil {
 			return err
@@ -252,15 +293,15 @@ func (p *Processor) walkSlice(s reflect.Value) error {
 }
 
 func (p *Processor) processNode(node reflect.Value) (reflect.Value, error) {
-	node = revealValue(node)
-	nodeKind := node.Kind()
+	node = reveal(node)
+	kind := node.Kind()
 	var err error
 
-	if nodeKind == reflect.String {
+	if kind == reflect.String {
 		node, err = p.expandVars(node)
-	} else if nodeKind == reflect.Map {
+	} else if kind == reflect.Map {
 		if name := node.MapIndex(varKey); name.IsValid() {
-			node, err = p.getVarValue(name)
+			node, err = p.getVar(name)
 		} else if locators := node.MapIndex(includeKey); locators.IsValid() {
 			node, err = p.include(locators)
 		}
@@ -332,11 +373,11 @@ func (p *Processor) expandVars(orig reflect.Value) (reflect.Value, error) {
 	return result, nil
 }
 
-func (p *Processor) getVarValue(name reflect.Value) (reflect.Value, error) {
-	name = revealValue(name)
-	nameKind := name.Kind()
+func (p *Processor) getVar(name reflect.Value) (reflect.Value, error) {
+	name = reveal(name)
+	kind := name.Kind()
 
-	if nameKind != reflect.String {
+	if kind != reflect.String {
 		return zero, fmt.Errorf("%s: invalid _var directive", errPref)
 	}
 
@@ -351,10 +392,10 @@ func (p *Processor) getVarValue(name reflect.Value) (reflect.Value, error) {
 }
 
 func (p *Processor) include(locators reflect.Value) (reflect.Value, error) {
-	locators = revealValue(locators)
-	locsKind := locators.Kind()
+	locators = reveal(locators)
+	kind := locators.Kind()
 
-	if locsKind != reflect.Slice {
+	if kind != reflect.Slice {
 		return zero, fmt.Errorf("%s: invalid _include directive", errPref)
 	}
 
@@ -404,7 +445,7 @@ func (p *Processor) resolveVar(name string) (reflect.Value, error) {
 		return value, nil
 	}
 
-	value, err := p.findVarValue(name)
+	value, err := p.findNode(name)
 
 	if err != nil {
 		return zero, err
@@ -415,28 +456,27 @@ func (p *Processor) resolveVar(name string) (reflect.Value, error) {
 	return value, nil
 }
 
-func (p *Processor) findVarValue(name string) (reflect.Value, error) {
-	var node reflect.Value
-	value := p.root
+func (p *Processor) findNode(name string) (reflect.Value, error) {
+	var parent reflect.Value
+	node := p.root
 	tokens := strings.Split(name, varNameSep)
 	tokensLen := len(tokens)
-	i := 0
 
-	for ; i < tokensLen; i++ {
+	for i := 0; i < tokensLen; i++ {
 		tokens[i] = strings.Trim(tokens[i], " ")
-		value = revealValue(value)
-		valueKind := value.Kind()
+		node = reveal(node)
+		kind := node.Kind()
 
-		if valueKind == reflect.Map {
-			node = value
+		if kind == reflect.Map {
+			parent = node
 			key := reflect.ValueOf(tokens[i])
 
 			crumbs := p.breadcrumbs
 			p.breadcrumbs = tokens[:i+1]
 
 			var err error
-			value = node.MapIndex(key)
-			value, err = p.processNode(value)
+			node = parent.MapIndex(key)
+			node, err = p.processNode(node)
 
 			p.breadcrumbs = crumbs
 
@@ -444,22 +484,22 @@ func (p *Processor) findVarValue(name string) (reflect.Value, error) {
 				return zero, err
 			}
 
-			node.SetMapIndex(key, value)
-		} else if valueKind == reflect.Slice {
-			node = value
+			parent.SetMapIndex(key, node)
+		} else if kind == reflect.Slice {
+			parent = node
 			j, err := strconv.Atoi(tokens[i])
 
 			if err != nil {
 				return zero, fmt.Errorf("%s: invalid slice index", errPref)
-			} else if j < 0 || j >= node.Len() {
+			} else if j < 0 || j >= parent.Len() {
 				return zero, fmt.Errorf("%s: slice index out of range", errPref)
 			}
 
 			crumbs := p.breadcrumbs
 			p.breadcrumbs = tokens[:i+1]
 
-			value = node.Index(j)
-			value, err = p.processNode(value)
+			node = parent.Index(j)
+			node, err = p.processNode(node)
 
 			p.breadcrumbs = crumbs
 
@@ -467,17 +507,17 @@ func (p *Processor) findVarValue(name string) (reflect.Value, error) {
 				return zero, err
 			}
 
-			node.Index(j).Set(value)
+			parent.Index(j).Set(node)
 		} else {
 			return emptyStr, nil
 		}
 
-		if !value.IsValid() {
+		if !node.IsValid() {
 			return emptyStr, nil
 		}
 	}
 
-	return value, nil
+	return node, nil
 }
 
 func (p *Processor) pushCrumb(bc string) {
@@ -488,10 +528,10 @@ func (p *Processor) popCrumb() {
 	p.breadcrumbs = p.breadcrumbs[:len(p.breadcrumbs)-1]
 }
 
-func revealValue(value reflect.Value) reflect.Value {
-	valueKind := value.Kind()
+func reveal(value reflect.Value) reflect.Value {
+	kind := value.Kind()
 
-	if valueKind == reflect.Interface {
+	if kind == reflect.Interface {
 		return value.Elem()
 	}
 

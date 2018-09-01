@@ -54,14 +54,14 @@ type FileLoader struct {
 // directories, in which the loader will search configuration files. The merge
 // priority of loaded configuration layers depends on the order of directories.
 // Layers loaded from rightmost directory have highest priority.
-func NewLoader(dirs ...string) (conf.Loader, error) {
+func NewLoader(dirs ...string) conf.Loader {
 	if len(dirs) == 0 {
 		panic(fmt.Errorf("%s: no directories specified", errPref))
 	}
 
 	return &FileLoader{
 		dirs: dirs,
-	}, nil
+	}
 }
 
 // Load method loads configuration layer.

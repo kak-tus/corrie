@@ -48,7 +48,7 @@ func init() {
 			}
 
 			wrt = &Writer{
-				logger:     applog.GetLogger(),
+				logger:     applog.GetLogger().Sugar(),
 				config:     cnf,
 				db:         db,
 				decoder:    jsoniter.Config{UseNumber: true}.Froze(),

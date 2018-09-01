@@ -11,7 +11,7 @@ and _include directives in resulting configuration tree (see below). Package
 conf comes with built-in configuration loaders: fileconf and envconf, and can be
 extended by third-party configuration loaders. Package conf do not watch for
 configuration changes, but you can implement this feature in the custom
-configuration loader.
+configuration loader. You can find full example in repository.
 
 Configuration processor can expand variables in string values (if you need alias
 for complex structures see _var directive). Variable names can be absolute or
@@ -54,40 +54,38 @@ Package conf supports two special directives in configuration layers: _var and
 _include. _var directive assigns configuration parameter value to another
 configuration parameter. Argument of the _var directive is a variabale name,
 absolute or relative. Here some example:
- myapp:
-   db:
-     defaultOptions:
-       PrintWarn: 0
-       PrintError: 0
-       RaiseError: 1
+ db:
+   defaultOptions:
+     serverPrepare: true
+     expandArray: true
+     errorLevel: 2
 
-     connectors:
-       stat:
-         host: "stat.mydb.com"
-         port: "1234"
-         dbname: "stat"
-         username: "stat_writer"
-         password: "stat_writer_pass"
-         options: {_var: "myapp.db.defaultOptions"}
+   connectors:
+     stat:
+       host: "stat.mydb.com"
+       port: 1234
+       dbname: "stat"
+       username: "stat_writer"
+       password: "stat_writer_pass"
+       options: {_var: "myapp.db.defaultOptions"}
 
-       metrics:
-         host: "metrics.mydb.com"
-         port: "1234"
-         dbname: "metrics"
-         username: "metrics_writer"
-         password: "metrics_writer_pass"
-         options: {_var: "...defaultOptions"}
+     metrics:
+       host: "metrics.mydb.com"
+       port: 1234
+       dbname: "metrics"
+       username: "metrics_writer"
+       password: "metrics_writer_pass"
+       options: {_var: "...defaultOptions"}
+
 _include directive loads configuration layer from external sources and assigns
 it to configuration parameter. Argument of the _include directive is a list of
 configuration locators.
- myapp:
-   db:
-     defaultOptions:
-       PrintWarn:  0
-       PrintError: 0
-       RaiseError: 1
+ db:
+   defaultOptions:
+     serverPrepare: true
+     expandArray: true
+     errorLevel: 2
 
-   connectors: {_include: ["file:connector.yml"]}
-You can find full example in repository.
+   connectors: {_include: ["file:connectors.yml"]}
 */
 package conf

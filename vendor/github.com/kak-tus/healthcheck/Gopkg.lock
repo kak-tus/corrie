@@ -14,24 +14,6 @@
   version = "v1.6.1"
 
 [[projects]]
-  name = "git.aqq.me/go/lrucache"
-  packages = ["."]
-  revision = "568b3e7eaaefa1c76169e37a7afac477a4be4c79"
-  version = "v1.1"
-
-[[projects]]
-  name = "git.aqq.me/go/nanachi"
-  packages = ["."]
-  revision = "6df092ca7f01c89cffad9ae1d7d15593d45911cb"
-  version = "v1.10.1"
-
-[[projects]]
-  name = "git.aqq.me/go/retrier"
-  packages = ["."]
-  revision = "1b9d7fbb0434cb939eda412cdb5f850fb6fccaf0"
-  version = "v1.10"
-
-[[projects]]
   name = "github.com/BurntSushi/toml"
   packages = ["."]
   revision = "b26d9c308763d68093482582cea63d69be07a0f0"
@@ -41,7 +23,6 @@
   name = "github.com/iph0/conf"
   packages = [
     ".",
-    "envconf",
     "fileconf"
   ]
   revision = "c8135274101587ea808bd86ebb163939f978aa6b"
@@ -54,54 +35,10 @@
   version = "v1.0"
 
 [[projects]]
-  name = "github.com/json-iterator/go"
-  packages = ["."]
-  revision = "1624edc4454b8682399def8740d46db5e4362ba4"
-  version = "v1.1.5"
-
-[[projects]]
-  name = "github.com/kak-tus/healthcheck"
-  packages = ["."]
-  revision = "e629063405d132806622154f9df3e40d08c1bcfd"
-  version = "v0.4.0"
-
-[[projects]]
-  name = "github.com/kshvakov/clickhouse"
-  packages = [
-    ".",
-    "lib/binary",
-    "lib/column",
-    "lib/data",
-    "lib/protocol",
-    "lib/types",
-    "lib/writebuffer"
-  ]
-  revision = "aeedb7b9d0584f393905447021238b5c6e9c5154"
-  version = "v1.3.4"
-
-[[projects]]
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "fa473d140ef3c6adf42d6b391fe76707f1f243c8"
   version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/modern-go/concurrent"
-  packages = ["."]
-  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
-  version = "1.0.3"
-
-[[projects]]
-  name = "github.com/modern-go/reflect2"
-  packages = ["."]
-  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
-  version = "1.0.1"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/streadway/amqp"
-  packages = ["."]
-  revision = "e5adc2ada8b8efff032bf61173a233d143e9318e"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -137,6 +74,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ce28832d900ad7ff3931c1b261054c17fe5d41124e14425f418407402103acf4"
+  inputs-digest = "cbba11f65c6f50eb3882a1f95768d560924cfdac2195180495685fbdc7ecd18f"
   solver-name = "gps-cdcl"
   solver-version = 1

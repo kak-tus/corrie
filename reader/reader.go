@@ -27,7 +27,7 @@ func init() {
 			}
 
 			rdr = &Reader{
-				logger: applog.GetLogger(),
+				logger: applog.GetLogger().Sugar(),
 				config: cnf,
 			}
 
@@ -147,7 +147,7 @@ func (r Reader) Stop() {
 
 // ToFailedQueue move message to failed queue
 func (r Reader) ToFailedQueue(m *nanachi.Delivery) {
-	err := r.producer.Send(
+	r.producer.Send(
 		nanachi.Publishing{
 			RoutingKey: r.config.Rabbit.QueueFailed,
 			Publishing: amqp.Publishing{
@@ -157,8 +157,4 @@ func (r Reader) ToFailedQueue(m *nanachi.Delivery) {
 			},
 		},
 	)
-
-	if err != nil {
-		r.logger.Error(err)
-	}
 }

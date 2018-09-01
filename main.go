@@ -16,11 +16,7 @@ var rdr *reader.Reader
 var wrt *writer.Writer
 
 func init() {
-	fileLdr, err := fileconf.NewLoader("etc")
-	if err != nil {
-		panic(err)
-	}
-
+	fileLdr := fileconf.NewLoader("etc")
 	envLdr := envconf.NewLoader()
 
 	appconf.RegisterLoader("file", fileLdr)

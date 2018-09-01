@@ -7,7 +7,7 @@ Package envconf is configuration loader for the conf package. It loads
 configuration layers from environment variables. Configuration locators for this
 loader are regular expressions. Here some examples:
 
- env:^MYAPP_.*"
+ env:^MYAPP_
  env:.*
 */
 package envconf

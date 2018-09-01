@@ -71,8 +71,5 @@ func (k *keeper) GetConfig() map[string]interface{} {
 }
 
 func (k *keeper) Clean() {
-	k.loaders = nil
-	k.locators = nil
-	k.locIndex = nil
 	k.config = nil
 }

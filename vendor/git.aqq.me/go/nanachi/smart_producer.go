@@ -7,7 +7,7 @@ import (
 )
 
 // Send method reliably sends messages to AMQP-server.
-func (p *SmartProducer) Send(msg Publishing) error {
+func (p *SmartProducer) Send(msg Publishing) {
 	p.m.RLock()
 	defer p.m.RUnlock()
 
@@ -16,8 +16,6 @@ func (p *SmartProducer) Send(msg Publishing) error {
 	}
 
 	p.msgs <- &msg
-
-	return nil
 }
 
 // CanSend method checks, can the producer send a message to specified destination.

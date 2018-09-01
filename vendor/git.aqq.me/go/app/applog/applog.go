@@ -38,11 +38,11 @@ func init() {
 	)
 }
 
-// GetLogger returns zap sugared logger instance
-func GetLogger() *zap.SugaredLogger {
+// GetLogger returns zap logger.
+func GetLogger() *zap.Logger {
 	if logger == nil {
 		panic(fmt.Errorf("%s must be initialized first", errPref))
 	}
 
-	return logger.SugaredLogger
+	return logger.Logger
 }

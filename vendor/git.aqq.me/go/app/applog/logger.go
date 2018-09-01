@@ -8,15 +8,35 @@ import (
 	"time"
 
 	"git.aqq.me/go/app/appconf"
-	"github.com/iph0/merger"
-	mapstruct "github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	configBranchName = "log"
+
+	pkgNameSep  = "/"
+	funcNameSep = '.'
+)
+
+var defaultConfig = map[string]interface{}{
+	"log": map[string]interface{}{
+		"tag":    "app",
+		"level":  "info",
+		"output": "stderr",
+		"format": "console",
+
+		"formatConfig": map[string]interface{}{
+			"colors":           false,
+			"timestampFormat":  "2006-01-02T15:04:05.99999Z0700",
+			"disableTimestamp": false,
+		},
+	},
+}
+
 // Logger is a wrapper around zap sugared logger
 type Logger struct {
-	*zap.SugaredLogger
+	*zap.Logger
 	close func()
 }
 
@@ -39,35 +59,19 @@ type formatConfig struct {
 	DisableTimestamp bool
 }
 
-const (
-	pkgNameSep  = "/"
-	funcNameSep = '.'
-)
-
-var defaultLoggerConfig = loggerConfig{
-	Tag:    "app",
-	Level:  "info",
-	Output: "stderr",
-	Format: "console",
-
-	FormatConfig: &formatConfig{
-		Colors:           false,
-		TimestampFormat:  "2006-01-02T15:04:05.99999Z0700",
-		DisableTimestamp: false,
-	},
+func init() {
+	appconf.Require(defaultConfig)
 }
 
 // NewLogger method creates new logger instance
 func NewLogger() (*Logger, error) {
 	var config loggerConfig
 	configRaw := appconf.GetConfig()
-	err := mapstruct.Decode(configRaw["log"], &config)
+	err := appconf.Decode(configRaw[configBranchName], &config)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: invalid configuration: %s", errPref, err)
 	}
-
-	config = merger.Merge(defaultLoggerConfig, config).(loggerConfig)
 
 	atomLevel := zap.NewAtomicLevel()
 	err = atomLevel.UnmarshalText([]byte(config.Level))
@@ -89,19 +93,19 @@ func NewLogger() (*Logger, error) {
 	var close func()
 
 	if config.Output == "file" {
-		outputOpts := fileOutputConfig{}
-		err := mapstruct.Decode(config.OutputConfig, &outputOpts)
+		outputConfig := fileOutputConfig{}
+		err := appconf.Decode(config.OutputConfig, &outputConfig)
 
 		if err != nil {
 			return nil, err
 		}
 
-		if outputOpts.FilePath == "" {
+		if outputConfig.FilePath == "" {
 			return nil, fmt.Errorf("%s: file path not specified", errPref)
 		}
 
 		var ws zapcore.WriteSyncer
-		ws, close, err = zap.Open(outputOpts.FilePath)
+		ws, close, err = zap.Open(outputConfig.FilePath)
 
 		if err != nil {
 			return nil, err
@@ -147,8 +151,8 @@ func NewLogger() (*Logger, error) {
 	)
 
 	return &Logger{
-		SugaredLogger: zapLogger.Sugar(),
-		close:         close,
+		Logger: zapLogger,
+		close:  close,
 	}, nil
 }
 
