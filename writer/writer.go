@@ -106,6 +106,12 @@ LOOP:
 			if err != nil {
 				w.logger.Error("Decode failed: ", err)
 				w.reader.ToFailedQueue(msg)
+
+				err := msg.Ack(false)
+				if err != nil {
+					w.logger.Error("Ack failed: ", err)
+				}
+
 				break
 			}
 

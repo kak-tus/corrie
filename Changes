@@ -1,5 +1,6 @@
 2018-09-01 v0.4.1
   - Fix processing of failed messages.
+  - Fix ACK of failed to decode messages.
 
 2018-09-01 v0.4.0
   - Mark as failed on prepare stage.
