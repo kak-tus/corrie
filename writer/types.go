@@ -35,4 +35,5 @@ type writerConfig struct {
 type toSend struct {
 	parsed  message.Message
 	nanachi *nanachi.Delivery
+	failed  bool
 }

@@ -117,6 +117,7 @@ LOOP:
 			w.toSendVals[parsed.Query][w.toSendCnts[parsed.Query]] = toSend{
 				parsed:  parsed,
 				nanachi: msg,
+				failed:  false,
 			}
 
 			w.toSendCnts[parsed.Query]++
@@ -159,13 +160,6 @@ func (w *Writer) sendOne(query string) {
 		w.send(query, w.toSendVals[query][0:w.toSendCnts[query]])
 		w.logger.Infof("Sended %d values for %q", w.toSendCnts[query], query)
 
-		for _, v := range w.toSendVals[query][0:w.toSendCnts[query]] {
-			err := v.nanachi.Ack(false)
-			if err != nil {
-				w.logger.Error("Ack failed: ", err)
-			}
-		}
-
 		w.toSendCnts[query] = 0
 	}
 }
@@ -183,29 +177,33 @@ func (w *Writer) send(query string, vals []toSend) {
 			tx.Rollback()
 			w.logger.Error("Prepare query failed: ", err)
 
-			for _, val := range vals {
-				w.reader.ToFailedQueue(val.nanachi)
+			for _, v := range vals {
+				v.failed = true
 			}
 
 			return retrier.Succeed
 		}
 
 		// There is no need to commit if no one succeeded exec
-		succeded := len(vals)
+		succeded := 0
 
-		for _, val := range vals {
-			data := w.makeCHArray(val.parsed.Data)
+		for _, v := range vals {
+			if v.failed {
+				continue
+			}
+
+			data := w.makeCHArray(v.parsed.Data)
 			_, err := stmt.Exec(data...)
 
 			if err != nil {
-				w.logger.Error("Exec failed: ", err)
-				w.reader.ToFailedQueue(val.nanachi)
-				succeded--
+				v.failed = true
 				continue
 			}
+
+			succeded++
 		}
 
-		if succeded <= 0 {
+		if succeded == 0 {
 			tx.Rollback()
 			return retrier.Succeed
 		}
@@ -218,6 +216,17 @@ func (w *Writer) send(query string, vals []toSend) {
 
 		return retrier.Succeed
 	})
+
+	for _, v := range vals {
+		if v.failed {
+			w.reader.ToFailedQueue(v.nanachi)
+		}
+
+		err := v.nanachi.Ack(false)
+		if err != nil {
+			w.logger.Error("Ack failed: ", err)
+		}
+	}
 }
 
 func (w Writer) makeCHArray(vals []interface{}) []interface{} {
