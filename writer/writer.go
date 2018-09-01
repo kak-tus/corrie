@@ -141,7 +141,7 @@ func (w Writer) IsAccessible() bool {
 			return true
 		}
 
-		w.logger.Error(err)
+		w.logger.Error("Ping failed: ", err)
 		time.Sleep(time.Second)
 	}
 
@@ -162,7 +162,7 @@ func (w *Writer) sendOne(query string) {
 		for _, v := range w.toSendVals[query][0:w.toSendCnts[query]] {
 			err := v.nanachi.Ack(false)
 			if err != nil {
-				w.logger.Error(err)
+				w.logger.Error("Ack failed: ", err)
 			}
 		}
 
@@ -174,14 +174,14 @@ func (w *Writer) send(query string, vals []toSend) {
 	w.retrier.Do(func() retrier.Status {
 		tx, err := w.db.Begin()
 		if err != nil {
-			w.logger.Error(err)
+			w.logger.Error("Start transaction failed: ", err)
 			return retrier.NeedRetry
 		}
 
 		stmt, err := tx.Prepare(query)
 		if err != nil {
 			tx.Rollback()
-			w.logger.Error(err)
+			w.logger.Error("Prepare query failed: ", err)
 			return retrier.NeedRetry
 		}
 
@@ -193,7 +193,7 @@ func (w *Writer) send(query string, vals []toSend) {
 			_, err := stmt.Exec(data...)
 
 			if err != nil {
-				w.logger.Error(err)
+				w.logger.Error("Exec failed: ", err)
 				w.reader.ToFailedQueue(val.nanachi)
 				succeded--
 				continue
@@ -207,7 +207,7 @@ func (w *Writer) send(query string, vals []toSend) {
 
 		err = tx.Commit()
 		if err != nil {
-			w.logger.Error(err)
+			w.logger.Error("Commit failed: ", err)
 			return retrier.NeedRetry
 		}
 
