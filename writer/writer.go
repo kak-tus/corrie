@@ -55,7 +55,7 @@ func init() {
 				m:          &sync.Mutex{},
 				reader:     reader.GetReader(),
 				toSendCnts: make(map[string]int),
-				toSendVals: make(map[string][]toSend),
+				toSendVals: make(map[string][]*toSend),
 				retrier:    retrier.New(retrier.Config{RetryPolicy: []time.Duration{time.Second * 5}}),
 			}
 
@@ -116,11 +116,11 @@ LOOP:
 			}
 
 			if w.toSendVals[parsed.Query] == nil {
-				w.toSendVals[parsed.Query] = make([]toSend, w.config.Batch)
+				w.toSendVals[parsed.Query] = make([]*toSend, w.config.Batch)
 				w.toSendCnts[parsed.Query] = 0
 			}
 
-			w.toSendVals[parsed.Query][w.toSendCnts[parsed.Query]] = toSend{
+			w.toSendVals[parsed.Query][w.toSendCnts[parsed.Query]] = &toSend{
 				parsed:  parsed,
 				nanachi: msg,
 				failed:  false,
@@ -166,11 +166,22 @@ func (w *Writer) sendOne(query string) {
 		w.send(query, w.toSendVals[query][0:w.toSendCnts[query]])
 		w.logger.Infof("Sended %d values for %q", w.toSendCnts[query], query)
 
+		for _, v := range w.toSendVals[query][0:w.toSendCnts[query]] {
+			if v.failed {
+				w.reader.ToFailedQueue(v.nanachi)
+			}
+
+			err := v.nanachi.Ack(false)
+			if err != nil {
+				w.logger.Error("Ack failed: ", err)
+			}
+		}
+
 		w.toSendCnts[query] = 0
 	}
 }
 
-func (w *Writer) send(query string, vals []toSend) {
+func (w *Writer) send(query string, vals []*toSend) {
 	w.retrier.Do(func() retrier.Status {
 		tx, err := w.db.Begin()
 		if err != nil {
@@ -223,17 +234,6 @@ func (w *Writer) send(query string, vals []toSend) {
 
 		return retrier.Succeed
 	})
-
-	for _, v := range vals {
-		if v.failed {
-			w.reader.ToFailedQueue(v.nanachi)
-		}
-
-		err := v.nanachi.Ack(false)
-		if err != nil {
-			w.logger.Error("Ack failed: ", err)
-		}
-	}
 }
 
 func (w Writer) makeCHArray(vals []interface{}) []interface{} {

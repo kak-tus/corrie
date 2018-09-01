@@ -21,7 +21,7 @@ type Writer struct {
 	decoder    jsoniter.API
 	m          *sync.Mutex
 	reader     *reader.Reader
-	toSendVals map[string][]toSend
+	toSendVals map[string][]*toSend
 	toSendCnts map[string]int
 	retrier    *retrier.Retrier
 }
