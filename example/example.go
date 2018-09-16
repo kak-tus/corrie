@@ -69,7 +69,7 @@ func main() {
 		panic(err)
 	}
 
-	err = producer.Send(
+	producer.Send(
 		nanachi.Publishing{
 			RoutingKey: queueName,
 			Publishing: amqp.Publishing{
