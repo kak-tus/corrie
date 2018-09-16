@@ -110,7 +110,7 @@ type Consumer struct {
 	source   *Source
 	msgs     chan *Delivery
 	cancels  chan string
-	closes   chan struct{}
+	retry    chan struct{}
 	stop     chan struct{}
 	canceled bool
 	closed   bool
@@ -452,14 +452,12 @@ func (c *Client) newConsumer(config ConsumerConfig) *Consumer {
 	}
 
 	cns := &Consumer{
-		id:      id,
-		config:  &config,
-		client:  c,
-		conn:    c.conn,
-		source:  config.Source,
-		cancels: make(chan string),
-		closes:  make(chan struct{}),
-		m:       &sync.Mutex{},
+		id:     id,
+		config: &config,
+		client: c,
+		conn:   c.conn,
+		source: config.Source,
+		m:      &sync.Mutex{},
 	}
 
 	c.consumers[id] = cns

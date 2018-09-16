@@ -22,8 +22,8 @@
 [[projects]]
   name = "git.aqq.me/go/nanachi"
   packages = ["."]
-  revision = "6df092ca7f01c89cffad9ae1d7d15593d45911cb"
-  version = "v1.10.1"
+  revision = "16c040447c6584a7ffdf3ed5d373bc3675992d97"
+  version = "v1.10.2"
 
 [[projects]]
   name = "git.aqq.me/go/retrier"
@@ -137,6 +137,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ce28832d900ad7ff3931c1b261054c17fe5d41124e14425f418407402103acf4"
+  inputs-digest = "1490845937fc25637d2bf100dd998fcef64e636967cc6e5021feb0902ab6506d"
   solver-name = "gps-cdcl"
   solver-version = 1

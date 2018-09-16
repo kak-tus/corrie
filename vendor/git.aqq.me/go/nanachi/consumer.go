@@ -75,7 +75,7 @@ func (c *Consumer) Close() {
 	c.wg.Wait()
 
 	close(c.cancels)
-	close(c.closes)
+	close(c.retry)
 }
 
 func (c *Consumer) run() {
@@ -88,12 +88,12 @@ func (c *Consumer) run() {
 			c.cwg.Done()
 		}()
 
-		var crName string
+		var cnsName string
 
 		for {
 			c.client.retrier.Do(
 				func() retrier.Status {
-					err := c.consume(crName)
+					err := c.consume(cnsName)
 
 					if err != nil {
 						c.notifyError(err)
@@ -108,14 +108,14 @@ func (c *Consumer) run() {
 			case <-c.stop:
 				c.cancel()
 				return
-			case crName = <-c.cancels:
-			case <-c.closes:
+			case cnsName = <-c.cancels:
+			case <-c.retry:
 			}
 		}
 	}()
 }
 
-func (c *Consumer) consume(crName string) error {
+func (c *Consumer) consume(cnsName string) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 
@@ -123,11 +123,18 @@ func (c *Consumer) consume(crName string) error {
 		panic("can't consume on closed consumer")
 	}
 
+	c.cancels = make(chan string)
+	c.retry = make(chan struct{})
+
 	if c.channel == nil {
 		err := c.init()
 
 		if err != nil {
 			return err
+		}
+
+		if cnsName != "" {
+			cnsName = ""
 		}
 	}
 
@@ -143,7 +150,7 @@ func (c *Consumer) consume(crName string) error {
 		c.source.declared = true
 	}
 
-	err := c.listenMessages(crName)
+	err := c.listenMessages(cnsName)
 
 	if err != nil {
 		return err
@@ -197,7 +204,7 @@ func (c *Consumer) listenCancel() {
 	go func() {
 		defer c.wg.Done()
 
-		for crName := range cancels {
+		for cnsName := range cancels {
 			c.m.Lock()
 
 			if c.closed {
@@ -206,25 +213,25 @@ func (c *Consumer) listenCancel() {
 			}
 
 			c.source.declared = false
-			c.cancels <- crName
+			c.cancels <- cnsName
 
 			c.m.Unlock()
 		}
 	}()
 }
 
-func (c *Consumer) listenMessages(crName string) error {
+func (c *Consumer) listenMessages(cnsName string) error {
 	msgsChanList := make([]<-chan amqp.Delivery, 0, 1)
 
 	if c.source.MaxShard > 0 {
-		if crName != "" {
-			token := strings.Replace(crName, c.config.ConsumerName+".", "", 1)
+		if cnsName != "" {
+			token := strings.Replace(cnsName, c.config.ConsumerName+".", "", 1)
 			shardNum, _ := strconv.Atoi(token)
 			queueName := c.shardedQueueName(int32(shardNum))
 
 			msgs, err := c.channel.Consume(
 				queueName,
-				crName,
+				cnsName,
 				c.config.AutoAck,
 				c.config.Exclusive,
 				c.config.NoLocal,
@@ -240,11 +247,11 @@ func (c *Consumer) listenMessages(crName string) error {
 		} else {
 			for i := int32(0); i <= c.source.MaxShard; i++ {
 				queueName := c.shardedQueueName(i)
-				crName := c.shardedConsumerName(i)
+				cnsName := c.shardedConsumerName(i)
 
 				msgs, err := c.channel.Consume(
 					queueName,
-					crName,
+					cnsName,
 					c.config.AutoAck,
 					c.config.Exclusive,
 					c.config.NoLocal,
@@ -318,7 +325,8 @@ func (c *Consumer) abort() {
 	c.channel = nil
 	c.source.declared = false
 
-	c.closes <- struct{}{}
+	close(c.cancels)
+	close(c.retry)
 }
 
 func (c *Consumer) cancel() {
@@ -328,8 +336,8 @@ func (c *Consumer) cancel() {
 	if c.channel != nil {
 		if c.source.MaxShard > 0 {
 			for i := int32(0); i <= c.source.MaxShard; i++ {
-				crName := c.shardedConsumerName(i)
-				c.channel.Cancel(crName, false)
+				cnsName := c.shardedConsumerName(i)
+				c.channel.Cancel(cnsName, false)
 			}
 		} else {
 			c.channel.Cancel(c.config.ConsumerName, false)
