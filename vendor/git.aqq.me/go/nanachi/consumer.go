@@ -92,15 +92,15 @@ func (c *Consumer) run() {
 
 		for {
 			c.client.retrier.Do(
-				func() retrier.Status {
+				func() *retrier.Error {
 					err := c.consume(cnsName)
 
 					if err != nil {
 						c.notifyError(err)
-						return retrier.NeedRetry
+						return retrier.NewError(err, false)
 					}
 
-					return retrier.Succeed
+					return nil
 				},
 			)
 

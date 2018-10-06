@@ -22,14 +22,14 @@
 [[projects]]
   name = "git.aqq.me/go/nanachi"
   packages = ["."]
-  revision = "16c040447c6584a7ffdf3ed5d373bc3675992d97"
-  version = "v1.10.2"
+  revision = "fe1288842e8dc104c45bd466fcd088e01b789895"
+  version = "v1.11.1"
 
 [[projects]]
   name = "git.aqq.me/go/retrier"
   packages = ["."]
-  revision = "1b9d7fbb0434cb939eda412cdb5f850fb6fccaf0"
-  version = "v1.10"
+  revision = "30bbe2f632db4a7a7157c94ede2cea6e98aaa261"
+  version = "v2.1.0"
 
 [[projects]]
   name = "github.com/BurntSushi/toml"
@@ -82,8 +82,8 @@
 [[projects]]
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
-  revision = "fa473d140ef3c6adf42d6b391fe76707f1f243c8"
-  version = "v1.0.0"
+  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
+  version = "v1.1.2"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -137,6 +137,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1490845937fc25637d2bf100dd998fcef64e636967cc6e5021feb0902ab6506d"
+  inputs-digest = "c1ca006b19074b034d83997789d8e3bd4198856e69637ce0aee8ac560f8b4c94"
   solver-name = "gps-cdcl"
   solver-version = 1

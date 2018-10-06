@@ -321,6 +321,8 @@ func (c *Client) Close() {
 		return
 	}
 
+	c.retrier.Stop()
+
 	producers := c.producers
 	c.producers = nil
 
@@ -346,7 +348,6 @@ func (c *Client) Close() {
 		cr.Close()
 	}
 
-	c.retrier.Stop()
 	c.conn.close()
 }
 

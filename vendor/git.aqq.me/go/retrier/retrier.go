@@ -2,21 +2,14 @@
 package retrier
 
 import (
-	"errors"
 	"math/rand"
 	"sync"
 	"time"
 )
 
-func init() {
-	now := time.Now()
-	rand.Seed(now.Unix())
-}
+var defaultRetryPolicy = []time.Duration{time.Second * 5}
 
-// Status type is used for all returned statuses
-type Status int
-
-// Retrier type represent a single retrier.
+// Retrier type represents a retrier instance.
 type Retrier struct {
 	config   Config
 	idSeq    int
@@ -32,32 +25,12 @@ type Config struct {
 	RetryPolicy []time.Duration
 }
 
-const (
-	// Succeed status must be returned on success operation.
-	Succeed Status = iota
+func init() {
+	now := time.Now()
+	rand.Seed(now.Unix())
+}
 
-	// NeedRetry status must be returned when operation needs to be repeated.
-	NeedRetry
-
-	// Failed status must be returned on failed operation.
-	Failed
-)
-
-var defaultRetryPolicy = []time.Duration{time.Second * 5}
-
-var (
-	// ErrFailed returned when operation was failed.
-	ErrFailed = errors.New("operation failed and can not be retried")
-
-	// ErrMaxAttempts returned when maximum number of attempts of operation will
-	// be reached.
-	ErrMaxAttempts = errors.New("maximum number of attempts reached")
-
-	// ErrStopped returned if performing operation on stopped retrier.
-	ErrStopped = errors.New("retries stopped")
-)
-
-// New function creates new retrier.
+// New method creates new retrier.
 func New(config Config) *Retrier {
 	if config.RetryPolicy == nil {
 		config.RetryPolicy = defaultRetryPolicy
@@ -73,59 +46,48 @@ func New(config Config) *Retrier {
 }
 
 // Do function executes an operation and retry it if operation was failed.
-func (r *Retrier) Do(f func() Status) error {
+func (r *Retrier) Do(f func() *Error) error {
 	r.m.Lock()
-
-	if r.stopped {
-		r.m.Unlock()
-		return ErrStopped
-	}
-
 	id := r.idSeq
 	r.idSeq++
-
 	r.m.Unlock()
 
 	for {
-		status := f()
+		err := f()
 
 		r.m.Lock()
 		r.attempts[id]++
 		attempts := r.attempts[id]
 		r.m.Unlock()
 
-		if status == Succeed {
+		if err == nil {
 			r.m.Lock()
 			delete(r.attempts, id)
 			r.m.Unlock()
 
 			return nil
-		} else if status == NeedRetry {
-			if r.config.MaxAttempts == 0 ||
-				attempts < r.config.MaxAttempts {
+		}
 
-				interval := r.getNextInterval(attempts)
-				t := time.NewTimer(interval)
+		if err.IsFatal() ||
+			(r.config.MaxAttempts > 0 &&
+				attempts >= r.config.MaxAttempts) ||
+			r.stopped {
 
-				select {
-				case <-r.stop:
-					t.Stop()
-					return ErrStopped
-				case <-t.C:
-				}
-			} else {
-				r.m.Lock()
-				delete(r.attempts, id)
-				r.m.Unlock()
-
-				return ErrMaxAttempts
-			}
-		} else {
 			r.m.Lock()
 			delete(r.attempts, id)
 			r.m.Unlock()
 
-			return ErrFailed
+			return err.err
+		}
+
+		interval := r.getNextInterval(attempts)
+		t := time.NewTimer(interval)
+
+		select {
+		case <-r.stop:
+			t.Stop()
+			return err
+		case <-t.C:
 		}
 	}
 }

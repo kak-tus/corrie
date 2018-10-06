@@ -18,26 +18,18 @@ func init() {
 
 // Send method sends messages to AMQP-server.
 func (p *Producer) Send(msg Publishing) error {
-	var err error
-
-	e := p.client.retrier.Do(
-		func() retrier.Status {
-			err = p.send(msg)
+	return p.client.retrier.Do(
+		func() *retrier.Error {
+			err := p.send(msg)
 
 			if err != nil {
 				p.notifyError(err)
-				return retrier.NeedRetry
+				return retrier.NewError(err, false)
 			}
 
-			return retrier.Succeed
+			return nil
 		},
 	)
-
-	if e != nil && err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // CanSend method checks, can the producer send a message to specified destination.
