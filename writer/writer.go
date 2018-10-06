@@ -181,11 +181,11 @@ func (w *Writer) sendOne(query string) {
 }
 
 func (w *Writer) send(query string, vals []*toSend) {
-	w.retrier.Do(func() retrier.Status {
+	w.retrier.Do(func() *retrier.Error {
 		tx, err := w.db.Begin()
 		if err != nil {
 			w.logger.Error("Start transaction failed: ", err)
-			return retrier.NeedRetry
+			return retrier.NewError(err, false)
 		}
 
 		stmt, err := tx.Prepare(query)
@@ -197,7 +197,7 @@ func (w *Writer) send(query string, vals []*toSend) {
 				v.failed = true
 			}
 
-			return retrier.Succeed
+			return nil
 		}
 
 		// There is no need to commit if no one succeeded exec
@@ -222,16 +222,16 @@ func (w *Writer) send(query string, vals []*toSend) {
 
 		if succeded == 0 {
 			tx.Rollback()
-			return retrier.Succeed
+			return nil
 		}
 
 		err = tx.Commit()
 		if err != nil {
 			w.logger.Error("Commit failed: ", err)
-			return retrier.NeedRetry
+			return retrier.NewError(err, false)
 		}
 
-		return retrier.Succeed
+		return nil
 	})
 }
 
