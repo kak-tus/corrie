@@ -1,9 +1,7 @@
-2018-10-07 v0.4.5
-  - Correct float/int detection.
-
 2018-09-16 v0.4.4
   - Fix example and docs.
   - Update nanachi.
+  - Correct float/int detection.
 
 2018-09-01 v0.4.3
   - Fixed failed processing.
