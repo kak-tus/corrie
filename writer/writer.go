@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -242,25 +241,24 @@ func (w Writer) makeCHArray(vals []interface{}) []interface{} {
 	for i, v := range vals {
 		num, ok := v.(json.Number)
 
-		if ok && strings.Index(num.String(), ".") >= 0 {
-			conv, err := num.Float64()
-			if err != nil {
-				w.logger.Error(err)
-				continue
-			}
-
-			data[i] = conv
-		} else if ok {
-			conv, err := num.Int64()
-			if err != nil {
-				w.logger.Error(err)
-				continue
-			}
-
-			data[i] = conv
-		} else {
+		if !ok {
 			data[i] = v
+			continue
 		}
+
+		convI, err := num.Int64()
+		if err == nil {
+			data[i] = convI
+			continue
+		}
+
+		convF, err := num.Float64()
+		if err == nil {
+			data[i] = convF
+			continue
+		}
+
+		data[i] = v
 	}
 
 	return data
