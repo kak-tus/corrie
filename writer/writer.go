@@ -11,11 +11,11 @@ import (
 	"git.aqq.me/go/app/applog"
 	"git.aqq.me/go/app/event"
 	"git.aqq.me/go/retrier"
+	"github.com/iph0/conf"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/kak-tus/corrie/message"
 	"github.com/kak-tus/corrie/reader"
 	"github.com/kshvakov/clickhouse"
-	"github.com/mitchellh/mapstructure"
 )
 
 var wrt *Writer
@@ -26,7 +26,7 @@ func init() {
 			cnfMap := appconf.GetConfig()["writer"]
 
 			var cnf writerConfig
-			err := mapstructure.Decode(cnfMap, &cnf)
+			err := conf.Decode(cnfMap, &cnf)
 			if err != nil {
 				return err
 			}

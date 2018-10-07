@@ -9,7 +9,7 @@ import (
 	"git.aqq.me/go/app/event"
 	"git.aqq.me/go/nanachi"
 	"git.aqq.me/go/retrier"
-	"github.com/mitchellh/mapstructure"
+	"github.com/iph0/conf"
 	"github.com/streadway/amqp"
 )
 
@@ -21,7 +21,7 @@ func init() {
 			cnfMap := appconf.GetConfig()["reader"]
 
 			var cnf readerConfig
-			err := mapstructure.Decode(cnfMap, &cnf)
+			err := conf.Decode(cnfMap, &cnf)
 			if err != nil {
 				return err
 			}
