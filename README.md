@@ -4,13 +4,53 @@ Reliable (with RabbitMQ) Clickhouse writer.
 
 ## Configuration
 
+### CORRIE_RABBITMQ_ADDR
+
+RabbitMQ address in host:port format
+
 ```
 CORRIE_RABBITMQ_ADDR=rabbitmq.example.com:5672
+```
+
+### CORRIE_RABBITMQ_VHOST
+
+RabbitMQ virtual host to store queue
+
+```
 CORRIE_RABBITMQ_VHOST=corrie
+```
+
+### CORRIE_RABBITMQ_USER, CORRIE_RABBITMQ_PASSWORD
+
+RabbitMQ user and password
+
+```
 CORRIE_RABBITMQ_USER=corrie
 CORRIE_RABBITMQ_PASSWORD=somepassword
+```
+
+### CORRIE_CLICKHOUSE_ADDR
+
+Primary ClickHouse address in host:port form
+
+```
 CORRIE_CLICKHOUSE_ADDR=clickhouse1.example.com:9000
+```
+
+### CORRIE_CLICKHOUSE_ALTADDRS
+
+Comma separated list of alternative ClickHouse addresses to loadbalancing. Can be empty
+
+```
 CORRIE_CLICKHOUSE_ALTADDRS=clickhouse2.example.com:9000
+```
+
+### CORRIE_BATCH
+
+Set batch size of ClickHouse writes.
+
+```
+CORRIE_BATCH=10000
 ```
 
 ## Run
