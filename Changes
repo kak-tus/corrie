@@ -1,6 +1,7 @@
 2018-09-16 v0.4.5
   - Configurable batch size of ClickHouse writes.
   - Improve documentation.
+  - Speed-up processing of queue.
 
 2018-09-16 v0.4.4
   - Fix example and docs.

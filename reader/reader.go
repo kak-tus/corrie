@@ -77,10 +77,11 @@ func (r *Reader) Start() {
 		Declare:  rdr.declare,
 	}
 
+	// Prefetch count must be greater then batch, to prevent temporary blocking
 	cons := r.nanachi.NewConsumer(
 		nanachi.ConsumerConfig{
 			Source:        src,
-			PrefetchCount: r.config.Batch,
+			PrefetchCount: r.config.Batch * 10,
 		},
 	)
 
