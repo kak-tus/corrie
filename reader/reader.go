@@ -103,9 +103,8 @@ func (r *Reader) Start() {
 	producer := client.NewSmartProducer(
 		nanachi.SmartProducerConfig{
 			Destinations:      []*nanachi.Destination{dst},
-			Confirm:           true,
 			Mandatory:         true,
-			PendingBufferSize: 1000,
+			PendingBufferSize: 1000000,
 		},
 	)
 

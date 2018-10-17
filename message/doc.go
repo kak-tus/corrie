@@ -15,10 +15,6 @@ Usage example
 		"github.com/streadway/amqp"
 	)
 
-	type confirmStdoutNotifier struct{}
-
-	type errorStdoutNotifier struct{}
-
 	func main() {
 		client, err := nanachi.NewClient(
 			nanachi.ClientConfig{
@@ -58,10 +54,8 @@ Usage example
 		producer := client.NewSmartProducer(
 			nanachi.SmartProducerConfig{
 				Destinations:      []*nanachi.Destination{dst},
-				Confirm:           true,
 				Mandatory:         true,
-				PendingBufferSize: 1000,
-				ConfirmNotifier:   new(confirmStdoutNotifier),
+				PendingBufferSize: 1000000,
 			},
 		)
 
@@ -86,24 +80,8 @@ Usage example
 			},
 		)
 
-		if err != nil {
-			panic(err)
-		}
-
 		client.Close()
-	}
-
-	func (n *confirmStdoutNotifier) Notify(c *nanachi.Confirmation) {
-		if c.Ack {
-			fmt.Println("Delivery succeed:", c.CorrelationId)
-		} else {
-			fmt.Println("Delivery failed:", c.CorrelationId)
-		}
-	}
-
-	func (n *errorStdoutNotifier) Notify(err error) {
-		fmt.Println("Error:", err)
-	}
+}
 
 */
 package message
