@@ -87,52 +87,51 @@ func GetWriter() *Writer {
 func (w Writer) Start() {
 	w.m.Lock()
 
-	go w.reader.Start()
+	w.reader.Start()
 
-	tick := time.NewTimer(time.Second * time.Duration(w.config.Period))
+	start := time.Now()
 
-LOOP:
 	for {
-		select {
-		case msg, more := <-w.reader.C:
-			if !more {
-				w.sendAll()
-				break LOOP
-			}
-
-			var parsed message.Message
-			err := w.decoder.Unmarshal(msg.Body, &parsed)
-			if err != nil {
-				w.logger.Error("Decode failed: ", err)
-				w.reader.ToFailedQueue(msg)
-
-				err := msg.Ack(false)
-				if err != nil {
-					w.logger.Error("Ack failed: ", err)
-				}
-
-				break
-			}
-
-			if w.toSendVals[parsed.Query] == nil {
-				w.toSendVals[parsed.Query] = make([]*toSend, w.config.Batch)
-				w.toSendCnts[parsed.Query] = 0
-			}
-
-			w.toSendVals[parsed.Query][w.toSendCnts[parsed.Query]] = &toSend{
-				parsed:  parsed,
-				nanachi: msg,
-				failed:  false,
-			}
-
-			w.toSendCnts[parsed.Query]++
-
-			if w.toSendCnts[parsed.Query] >= w.config.Batch {
-				w.sendOne(parsed.Query)
-			}
-		case <-tick.C:
+		msg, more := <-w.reader.C
+		if !more {
 			w.sendAll()
-			tick = time.NewTimer(time.Second * time.Duration(w.config.Period))
+			break
+		}
+
+		var parsed message.Message
+		err := w.decoder.Unmarshal(msg.Body, &parsed)
+		if err != nil {
+			w.logger.Error("Decode failed: ", err)
+			w.reader.ToFailedQueue(msg)
+
+			err := msg.Ack(false)
+			if err != nil {
+				w.logger.Error("Ack failed: ", err)
+			}
+
+			continue
+		}
+
+		if w.toSendVals[parsed.Query] == nil {
+			w.toSendVals[parsed.Query] = make([]*toSend, w.config.Batch)
+			w.toSendCnts[parsed.Query] = 0
+		}
+
+		w.toSendVals[parsed.Query][w.toSendCnts[parsed.Query]] = &toSend{
+			parsed:  parsed,
+			nanachi: msg,
+			failed:  false,
+		}
+
+		w.toSendCnts[parsed.Query]++
+
+		if w.toSendCnts[parsed.Query] >= w.config.Batch {
+			w.sendOne(parsed.Query)
+		}
+
+		if time.Now().Sub(start).Seconds() >= float64(w.config.Period) {
+			w.sendAll()
+			start = time.Now()
 		}
 	}
 

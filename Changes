@@ -1,5 +1,9 @@
 2018-10-18 v0.4.8
   - Speed-up processing of queue.
+  - Add send timings.
+
+2018-10-18 v0.4.8
+  - Speed-up processing of queue.
 
 2018-10-18 v0.4.7
   - Fix memory leak.
