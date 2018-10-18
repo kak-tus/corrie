@@ -164,8 +164,8 @@ func (w *Writer) sendOne(query string) {
 		started := time.Now()
 		w.send(query, w.toSendVals[query][0:w.toSendCnts[query]])
 
-		diff := time.Now().Sub(started)
-		w.logger.Infof("Sended %d values in %fsec for %q", w.toSendCnts[query], diff.Seconds(), query)
+		diffSend := time.Now().Sub(started)
+		started = time.Now()
 
 		for _, v := range w.toSendVals[query][0:w.toSendCnts[query]] {
 			if v.failed {
@@ -177,6 +177,9 @@ func (w *Writer) sendOne(query string) {
 				w.logger.Error("Ack failed: ", err)
 			}
 		}
+
+		diffAck := time.Now().Sub(started)
+		w.logger.Infof("Sended %d values in %fsec, acked in %fsec for %q", w.toSendCnts[query], diffSend.Seconds(), diffAck.Seconds(), query)
 
 		w.toSendCnts[query] = 0
 	}

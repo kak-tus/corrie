@@ -1,4 +1,7 @@
 2018-10-18 v0.4.10
+  - Lower default batch size.
+
+2018-10-18 v0.4.10
   - Speed-up processing of queue.
 
 2018-10-18 v0.4.9
