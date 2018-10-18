@@ -56,6 +56,7 @@ Usage example
 				Destinations:      []*nanachi.Destination{dst},
 				Mandatory:         true,
 				PendingBufferSize: 1000000,
+				Confirm:           true,
 			},
 		)
 
