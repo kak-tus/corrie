@@ -41,7 +41,8 @@ func init() {
 		func() error {
 			rdr.logger.Info("Stop reader")
 
-			rdr.nanachi.Close()
+			rdr.consumerClient.Close()
+			rdr.producerClient.Close()
 
 			return nil
 		},
@@ -55,7 +56,7 @@ func GetReader() *Reader {
 
 // Start reader
 func (r *Reader) Start() {
-	client, err := nanachi.NewClient(
+	consumerClient, err := nanachi.NewClient(
 		nanachi.ClientConfig{
 			URI:           r.config.Rabbit.URI,
 			Heartbeat:     time.Second * 15,
@@ -69,7 +70,22 @@ func (r *Reader) Start() {
 		r.logger.Panic(err)
 	}
 
-	r.nanachi = client
+	producerClient, err := nanachi.NewClient(
+		nanachi.ClientConfig{
+			URI:           r.config.Rabbit.URI,
+			Heartbeat:     time.Second * 15,
+			ErrorNotifier: r,
+			RetrierConfig: &retrier.Config{
+				RetryPolicy: []time.Duration{time.Second},
+			},
+		},
+	)
+	if err != nil {
+		r.logger.Panic(err)
+	}
+
+	r.consumerClient = consumerClient
+	r.producerClient = producerClient
 
 	src := &nanachi.Source{
 		Queue:    r.config.Rabbit.Queue,
@@ -78,10 +94,10 @@ func (r *Reader) Start() {
 	}
 
 	// Prefetch count must be greater then batch, to prevent temporary blocking
-	cons := r.nanachi.NewConsumer(
+	cons := r.consumerClient.NewConsumer(
 		nanachi.ConsumerConfig{
 			Source:        src,
-			PrefetchCount: r.config.Batch * 20,
+			PrefetchCount: r.config.Batch * 10,
 		},
 	)
 
@@ -100,7 +116,7 @@ func (r *Reader) Start() {
 		Declare:    rdr.declare,
 	}
 
-	producer := client.NewSmartProducer(
+	producer := r.producerClient.NewSmartProducer(
 		nanachi.SmartProducerConfig{
 			Destinations:      []*nanachi.Destination{dst},
 			Mandatory:         true,

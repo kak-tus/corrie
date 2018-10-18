@@ -7,12 +7,13 @@ import (
 
 // Reader hold object
 type Reader struct {
-	logger   *zap.SugaredLogger
-	config   readerConfig
-	nanachi  *nanachi.Client
-	consumer *nanachi.Consumer
-	producer *nanachi.SmartProducer
-	C        <-chan *nanachi.Delivery
+	logger         *zap.SugaredLogger
+	config         readerConfig
+	consumerClient *nanachi.Client
+	producerClient *nanachi.Client
+	consumer       *nanachi.Consumer
+	producer       *nanachi.SmartProducer
+	C              <-chan *nanachi.Delivery
 }
 
 type readerConfig struct {
