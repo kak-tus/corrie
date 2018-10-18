@@ -81,7 +81,7 @@ func (r *Reader) Start() {
 	cons := r.nanachi.NewConsumer(
 		nanachi.ConsumerConfig{
 			Source:        src,
-			PrefetchCount: r.config.Batch * 10,
+			PrefetchCount: r.config.Batch * 20,
 		},
 	)
 
