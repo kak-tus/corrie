@@ -162,8 +162,11 @@ func (w *Writer) sendAll() {
 
 func (w *Writer) sendOne(query string) {
 	if w.toSendCnts[query] > 0 {
+		started := time.Now()
 		w.send(query, w.toSendVals[query][0:w.toSendCnts[query]])
-		w.logger.Infof("Sended %d values for %q", w.toSendCnts[query], query)
+
+		diff := time.Now().Sub(started)
+		w.logger.Infof("Sended %d values in %fsec for %q", w.toSendCnts[query], diff.Seconds(), query)
 
 		for _, v := range w.toSendVals[query][0:w.toSendCnts[query]] {
 			if v.failed {
