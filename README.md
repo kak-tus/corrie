@@ -2,6 +2,8 @@
 
 Reliable (with RabbitMQ) Clickhouse writer.
 
+Notice: if you need performance, it is better idea to use [Ruthie](https://github.com/kak-tus/ruthie) - based on Redis Cluster it has much more better performance, then Corrie, based on RabbitMQ.
+
 ## Configuration
 
 ### CORRIE_RABBITMQ_ADDR
