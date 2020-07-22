@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"git.aqq.me/go/nanachi"
 	"sync"
 	"time"
+
+	"git.aqq.me/go/nanachi"
 
 	"git.aqq.me/go/app/appconf"
 	"git.aqq.me/go/app/applog"
@@ -90,21 +91,23 @@ func (w Writer) Start() {
 
 	w.reader.Start()
 	sendPeriod := time.Duration(w.config.Period) * time.Second
+	tick := time.NewTicker(sendPeriod)
 
 	for {
 		var msg *nanachi.Delivery
 		var more bool
 		select {
-			case msg, more = <- w.reader.C:
-				w.logger.Debug("Received a message")
-				if !more {
-					w.sendAll()
-					break
-				}
-			case <- time.After(sendPeriod):
-				w.logger.Debug("Sent periodically")
+		case msg, more = <-w.reader.C:
+			w.logger.Debug("Received a message")
+			if !more {
 				w.sendAll()
-				continue
+				tick.Stop()
+				break
+			}
+		case <-tick.C:
+			w.logger.Debug("Sent periodically")
+			w.sendAll()
+			continue
 		}
 
 		var parsed message.Message
