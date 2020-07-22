@@ -98,7 +98,6 @@ func (w Writer) Start() {
 		var more bool
 		select {
 		case msg, more = <-w.reader.C:
-			w.logger.Debug("Received a message")
 			if !more {
 				w.sendAll()
 				tick.Stop()
