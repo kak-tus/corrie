@@ -1,7 +1,7 @@
 2020-07-22 v0.4.12
-  - Set MaxAttempts to retry communicate with RabbitMQ (Yehor Komarov).
-  - Allow to use config from /etc (Yehor Komarov).
-  - Fix infinite waiting message if no more messages in Rabbit (Yehor Komarov).
+  - Set MaxAttempts to retry communicate with RabbitMQ (geoolekom).
+  - Allow to use config from /etc (geoolekom).
+  - Fix infinite waiting message if no more messages in Rabbit (geoolekom).
 
 2018-10-18 v0.4.11
   - Lower default batch size.
