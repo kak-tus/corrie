@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"git.aqq.me/go/nanachi"
+
 	"git.aqq.me/go/app/appconf"
 	"git.aqq.me/go/app/applog"
 	"git.aqq.me/go/app/event"
@@ -88,14 +90,23 @@ func (w Writer) Start() {
 	w.m.Lock()
 
 	w.reader.Start()
-
-	start := time.Now()
+	sendPeriod := time.Duration(w.config.Period) * time.Second
+	tick := time.NewTicker(sendPeriod)
 
 	for {
-		msg, more := <-w.reader.C
-		if !more {
+		var msg *nanachi.Delivery
+		var more bool
+		select {
+		case msg, more = <-w.reader.C:
+			if !more {
+				w.sendAll()
+				tick.Stop()
+				break
+			}
+		case <-tick.C:
+			w.logger.Debug("Sent periodically")
 			w.sendAll()
-			break
+			continue
 		}
 
 		var parsed message.Message
@@ -127,11 +138,6 @@ func (w Writer) Start() {
 
 		if w.toSendCnts[parsed.Query] >= w.config.Batch {
 			w.sendOne(parsed.Query)
-		}
-
-		if time.Now().Sub(start).Seconds() >= float64(w.config.Period) {
-			w.sendAll()
-			start = time.Now()
 		}
 	}
 

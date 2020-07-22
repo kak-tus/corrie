@@ -63,6 +63,7 @@ func (r *Reader) Start() {
 			ErrorNotifier: r,
 			RetrierConfig: &retrier.Config{
 				RetryPolicy: []time.Duration{time.Second},
+				MaxAttempts: r.config.Rabbit.MaxRetry,
 			},
 		},
 	)
@@ -77,6 +78,7 @@ func (r *Reader) Start() {
 			ErrorNotifier: r,
 			RetrierConfig: &retrier.Config{
 				RetryPolicy: []time.Duration{time.Second},
+				MaxAttempts: r.config.Rabbit.MaxRetry,
 			},
 		},
 	)

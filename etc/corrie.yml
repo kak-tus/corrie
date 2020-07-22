@@ -23,4 +23,5 @@ reader:
     queue: messages
     queueFailed: failed
     maxShard: 2
+    maxRetry: '${CORRIE_RABBITMQ_MAXRETRY}'
   batch: {_var: "batch"}
