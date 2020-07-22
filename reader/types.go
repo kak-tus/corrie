@@ -26,5 +26,5 @@ type rabbitConfig struct {
 	Queue       string
 	QueueFailed string
 	MaxShard    int
-	MaxRetry  int
+	MaxRetry    int
 }
