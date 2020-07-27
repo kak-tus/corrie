@@ -186,7 +186,7 @@ func (w *Writer) sendOne(query string) {
 		}
 
 		diffAck := time.Now().Sub(started)
-		w.logger.Infof("Sended %d values in %fsec, acked in %fsec for %q", w.toSendCnts[query], diffSend.Seconds(), diffAck.Seconds(), query)
+		w.logger.Infof("Sent %d values in %fsec, acked in %fsec for %q", w.toSendCnts[query], diffSend.Seconds(), diffAck.Seconds(), query)
 
 		w.toSendCnts[query] = 0
 	}
