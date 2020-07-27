@@ -98,15 +98,16 @@ func (w Writer) Start() {
 		var more bool
 		select {
 		case msg, more = <-w.reader.C:
-			if !more {
-				w.sendAll()
-				tick.Stop()
-				break
-			}
+			break
 		case <-tick.C:
 			w.logger.Debug("Sent periodically")
 			w.sendAll()
 			continue
+		}
+		if !more {
+			w.sendAll()
+			tick.Stop()
+			break
 		}
 
 		var parsed message.Message
