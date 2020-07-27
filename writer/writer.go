@@ -98,15 +98,16 @@ func (w Writer) Start() {
 		var more bool
 		select {
 		case msg, more = <-w.reader.C:
-			if !more {
-				w.sendAll()
-				tick.Stop()
-				break
-			}
+			break
 		case <-tick.C:
 			w.logger.Debug("Sent periodically")
 			w.sendAll()
 			continue
+		}
+		if !more {
+			w.sendAll()
+			tick.Stop()
+			break
 		}
 
 		var parsed message.Message
@@ -185,7 +186,7 @@ func (w *Writer) sendOne(query string) {
 		}
 
 		diffAck := time.Now().Sub(started)
-		w.logger.Infof("Sended %d values in %fsec, acked in %fsec for %q", w.toSendCnts[query], diffSend.Seconds(), diffAck.Seconds(), query)
+		w.logger.Infof("Sent %d values in %fsec, acked in %fsec for %q", w.toSendCnts[query], diffSend.Seconds(), diffAck.Seconds(), query)
 
 		w.toSendCnts[query] = 0
 	}
